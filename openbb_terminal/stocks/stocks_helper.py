@@ -202,7 +202,7 @@ def search(
         lambda x: x.replace("_", " ").title() if x else None
     )
     df["exchange"] = df["exchange"].apply(
-        lambda x: "United States" if x == "Usa" else None
+        lambda x: "United States" if x == "Usa" else x
     )
 
     print_rich_table(

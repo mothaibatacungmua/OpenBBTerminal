@@ -61,6 +61,7 @@ market_coverage_suffix = {
     "turkey": ["IS"],
     "united_kingdom": ["L", "IL"],
     "venezuela": ["CR"],
+    "vietnam": ["HOSE", "HNX", "UPCOM"]
 }
 
 INCOME_PLOT = {

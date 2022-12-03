@@ -100,7 +100,7 @@ def search(
     country: str = "",
     sector: str = "",
     industry: str = "",
-    exchange_country: str = "",
+    exchange: str = "",
     limit: int = 0,
     export: str = "",
 ) -> None:
@@ -116,8 +116,8 @@ def search(
         Search by sector to find stocks matching the criteria
     industry : str
         Search by industry to find stocks matching the criteria
-    exchange_country: str
-        Search by exchange country to find stock matching
+    exchange: str
+        Search by exchange to find stock matching
     limit : int
         The limit of companies shown.
     export : str
@@ -125,11 +125,15 @@ def search(
     """
     kwargs: Dict[str, Any] = {"exclude_exchanges": False}
     if country:
-        kwargs["country"] = country.replace("_", " ").title()
+        kwargs["country"] = country.replace("_", " ")
     if sector:
-        kwargs["sector"] = sector
+        kwargs["sector"] = sector.replace("_", " ")
     if industry:
-        kwargs["industry"] = industry
+        kwargs["industry"] = industry.replace("_", " ")
+    if exchange:
+        kwargs["exchange"] = exchange
+    if limit > 0:
+        kwargs["limit"] = limit
 
     try:
         data = fd.select_equities(**kwargs)
@@ -139,7 +143,7 @@ def search(
             " capabilities. This tends to be due to access restrictions for GitHub.com,"
             " please check if you can access this website without a VPN.[/red]\n"
         )
-        data = {}
+        data = []
     except ValueError:
         console.print(
             "[red]No companies were found that match the given criteria.[/red]\n"
@@ -151,44 +155,22 @@ def search(
 
     if query:
         d = fd.search_products(
-            data, query, search="long_name", case_sensitive=False, new_database=None
-        )
+            data, query, search=["long_name"], 
+            case_sensitive=False, new_database=None)
     else:
         d = data
 
-    if not d:
+    if not len(d):
         console.print("No companies found.\n")
         return
-
-    df = pd.DataFrame.from_dict(d).T[["long_name", "country", "sector", "industry"]]
-    if exchange_country:
-        if exchange_country in market_coverage_suffix:
-            suffix_tickers = [
-                ticker.split(".")[1] if "." in ticker else ""
-                for ticker in list(df.index)
-            ]
-            df = df[
-                [
-                    val in market_coverage_suffix[exchange_country]
-                    for val in suffix_tickers
-                ]
-            ]
-
-    exchange_suffix = {}
-    for k, v in market_coverage_suffix.items():
-        for x in v:
-            exchange_suffix[x] = k
-
-    df["exchange"] = [
-        exchange_suffix.get(ticker.split(".")[1]) if "." in ticker else "USA"
-        for ticker in list(df.index)
-    ]
-
+    d = fd.format_equities(d)
+    df = pd.DataFrame.from_records(d)
+    
     title = "Companies found"
     if query:
         title += f" on term {query}"
-    if exchange_country:
-        title += f" on an exchange in {exchange_country.replace('_', ' ').title()}"
+    if exchange:
+        title += f" on an exchange in {exchange}"
     if country:
         title += f" in {country.replace('_', ' ').title()}"
     if sector:
@@ -198,17 +180,28 @@ def search(
     if not sector and industry:
         title += f" within {industry}"
 
-    df["exchange"] = df["exchange"].apply(
-        lambda x: x.replace("_", " ").title() if x else None
-    )
-    df["exchange"] = df["exchange"].apply(
-        lambda x: "United States" if x == "Usa" else x
-    )
-
+    columns = df.columns
+    for c in columns:
+        if c not in {"ticker", "long_name", "country", "sector", "industry", "exchange", "id", "market"}:
+            df.drop([c], axis=1, inplace=True)
+    df.rename(columns={
+        "ticker": "Ticker",
+        "long_name": "Name",
+        "country": "Country",
+        "sector": "Sector",
+        "industry": "Industry",
+        "exchange": "Exchange",
+        "market": "Market",
+        "id": "Id"
+    }, inplace=True)
+    
+    df.set_index("Id", inplace=True)
+    display_cols = ["Ticker", "Name", "Country", "Sector", "Industry", "Exchange", "Market"]
+    df = df[display_cols] 
     print_rich_table(
-        df.iloc[:limit] if limit else df,
+        df,
         show_index=True,
-        headers=["Name", "Country", "Sector", "Industry", "Exchange"],
+        headers=display_cols,
         title=title,
     )
 

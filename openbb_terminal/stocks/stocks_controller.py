@@ -76,9 +76,6 @@ class StocksController(StockBaseController):
     PATH = "/stocks/"
     FILE_PATH = os.path.join(os.path.dirname(__file__), "README.md")
 
-    country = financedatabase.show_options("equities", "countries")
-    sector = financedatabase.show_options("equities", "sectors")
-    industry = financedatabase.show_options("equities", "industries")
     TOB_EXCHANGES = ["BZX", "EDGX", "BYX", "EDGA"]
 
     def __init__(self, queue: List[str] = None):
@@ -129,9 +126,7 @@ class StocksController(StockBaseController):
                 "-s": "--sector",
                 "--industry": {c: {} for c in self.industry},
                 "-i": "--industry",
-                "--exchange": {
-                    c.lower(): {} for c in stocks_helper.market_coverage_suffix
-                },
+                "--exchange": {c.upper(): {} for c in self.exchange},
                 "-e": "--exchange",
                 "--limit": None,
                 "-l": "--limit",
@@ -167,6 +162,22 @@ class StocksController(StockBaseController):
             choices["about"] = self.ABOUT_CHOICES
 
             self.completer = NestedCompleter.from_nested_dict(choices)
+
+    @property
+    def country(self):
+        return financedatabase.show_options("equities", "countries")
+
+    @property
+    def sector(self):
+        return financedatabase.show_options("equities", "sectors")
+
+    @property
+    def industry(self):
+        return financedatabase.show_options("equities", "industries")
+
+    @property
+    def exchange(self):
+        return financedatabase.show_options("equities", "exchanges")
 
     def print_help(self):
         """Print help."""
@@ -270,15 +281,14 @@ class StocksController(StockBaseController):
             dest="industry",
             help="Search by industry to find stocks matching the criteria",
         )
-        country_opts = [x.lower() for x in stocks_helper.market_coverage_suffix]
         parser.add_argument(
             "-e",
             "--exchange",
             default="",
-            choices=country_opts,
-            type=str.lower,
-            metavar="country_name",
-            dest="exchange_country",
+            choices=self.exchange,
+            type=str.upper,
+            metavar="exchange_name",
+            dest="exchange",
             help="Search by a specific exchange country to find stocks matching the criteria",
         )
         if other_args and "-" not in other_args[0][0]:
@@ -295,7 +305,7 @@ class StocksController(StockBaseController):
                 country=ns_parser.country,
                 sector=ns_parser.sector,
                 industry=ns_parser.industry,
-                exchange_country=ns_parser.exchange_country,
+                exchange=ns_parser.exchange,
                 limit=ns_parser.limit,
                 export=ns_parser.export,
             )

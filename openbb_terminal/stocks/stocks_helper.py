@@ -132,6 +132,8 @@ def search(
         kwargs["industry"] = industry.replace("_", " ")
     if exchange:
         kwargs["exchange"] = exchange
+    if query:
+        kwargs["query"] = query
     if limit > 0:
         kwargs["limit"] = limit
 
@@ -153,18 +155,7 @@ def search(
         console.print("No companies found.\n")
         return
 
-    if query:
-        d = fd.search_products(
-            data, query, search=["long_name"], 
-            case_sensitive=False, new_database=None)
-    else:
-        d = data
-
-    if not len(d):
-        console.print("No companies found.\n")
-        return
-    d = fd.format_equities(d)
-    df = pd.DataFrame.from_records(d)
+    df = pd.DataFrame.from_records(data)
     
     title = "Companies found"
     if query:

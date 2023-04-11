@@ -284,8 +284,10 @@ def load(
         market = None
         if "." in symbol:
             symbol, market = symbol.split(".")[:2]
+            market = market.lower() + "_market"
         df_stock_candidate = fd_api.load_hs_price(
             symbol=symbol,
+            market=market,
             start_date=start_date,
             end_date=end_date,
             resolution=int_string
@@ -768,6 +770,7 @@ def additional_info_about_ticker(ticker: str) -> str:
     if ticker:
         if "." in ticker.upper():
             ticker, market = ticker.split(".")
+            market = market.lower() + "_market"
         ticker_info = fd_dbo.format_equities(
             [fd_dbo.get_equity_by_market_name(ticker, market=market)])[0]
         extra_info += "\n[param]Company:  [/param]"

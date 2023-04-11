@@ -7,7 +7,7 @@ import os
 from datetime import datetime, timedelta
 from typing import List
 
-import financedatabase
+from financedatabase import fd_api
 import yfinance as yf
 
 from openbb_terminal import feature_flags as obbff
@@ -165,19 +165,19 @@ class StocksController(StockBaseController):
 
     @property
     def country(self):
-        return financedatabase.show_options("equities", "countries")
+        return fd_api.show_options("equities", "countries")
 
     @property
     def sector(self):
-        return financedatabase.show_options("equities", "sectors")
+        return fd_api.show_options("equities", "sectors")
 
     @property
     def industry(self):
-        return financedatabase.show_options("equities", "industries")
+        return fd_api.show_options("equities", "industries")
 
     @property
     def exchange(self):
-        return financedatabase.show_options("equities", "exchanges")
+        return fd_api.show_options("equities", "exchanges")
 
     def print_help(self):
         """Print help."""
